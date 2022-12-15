@@ -6,12 +6,16 @@ macro_rules! syntax {
     (
         WHITESPACE $tt1:tt
         TOKEN $tt2:tt
+        RULE $tt3:tt
+        START $tt4:tt
     ) => {
         declare_whitespace_regex!($tt1);
         declare_token_extractors!($tt2);
         impl_token!($tt2);
         impl_terminal_symbol!($tt2);
+        impl_nonterminal_symbol!($tt3);
         impl_lex!();
+        impl_yacc!();
     };
 }
 
@@ -123,6 +127,18 @@ macro_rules! impl_terminal_symbol {
 }
 
 #[macro_export]
+macro_rules! impl_nonterminal_symbol {
+    ( { $( $i1:ident => $( $i2:ident ( $($tt:tt),* ) )|+ );*; } ) => {
+        $(
+            #[derive(Debug)]
+            pub enum $i1 {
+                $( $i2( $( Box<$tt> ),* ) ),*,
+            }
+        )*
+    };
+}
+
+#[macro_export]
 macro_rules! impl_lex {
     () => {
         pub struct Lex;
@@ -196,6 +212,20 @@ macro_rules! impl_lex {
                 }
             }
         }
+    };
+}
+
+#[macro_export]
+macro_rules! define_yacc {
+    () => {
+        pub struct Yacc;
+    };
+}
+
+#[macro_export]
+macro_rules! impl_yacc {
+    () => {
+        define_yacc!();
     };
 }
 
