@@ -14,8 +14,9 @@ macro_rules! syntax {
         impl_token!($tt2);
         impl_terminal_symbol!($tt2);
         impl_nonterminal_symbol!($tt3);
+
         impl_lex!();
-        impl_yacc!();
+        impl_yacc!($tt2 $tt3 $tt4);
     };
 }
 
@@ -120,8 +121,26 @@ macro_rules! impl_token {
 macro_rules! impl_terminal_symbol {
     ( { $( $i:ident => $tt:tt );*; } ) => {
         $(
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
             pub struct $i(String);
+        )*
+    };
+}
+
+#[macro_export]
+macro_rules! impl_parsablell_for_terminal_symbol {
+    ( { $( $i:ident => $tt:tt );*; } ) => {
+        $(
+            impl ParsableLL for $i {
+                fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, ()> {
+                    if let Some(Token::$i(x)) = v.get(*idx) {
+                        *idx += 1;
+                        return Ok(x.clone());
+                    } else {
+                        Err(())
+                    }
+                }
+            }
         )*
     };
 }
@@ -133,6 +152,33 @@ macro_rules! impl_nonterminal_symbol {
             #[derive(Debug)]
             pub enum $i1 {
                 $( $i2( $( Box<$tt> ),* ) ),*,
+            }
+        )*
+    };
+}
+
+#[macro_export]
+macro_rules! impl_parsablell_for_nonterminal_symbol {
+    ( { $( $i1:ident => $( $i2:ident ( $($tt:tt),* ) )|+ );*; } ) => {
+        $(
+            impl ParsableLL for $i1 {
+                fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, ()> {
+                    let start_idx = *idx;
+
+                    $(
+                        let mut c = || -> Result<Self, ()> {
+                            Ok($i1::$i2(
+                                $( Box::new($tt::parse_ll(v, idx)?) ),*,
+                            ))
+                        };
+                        if let Ok(x) = c() {
+                            return Ok(x);
+                        }
+                        *idx = start_idx;
+                    )*
+
+                    Err(())
+                }
             }
         )*
     };
@@ -216,6 +262,15 @@ macro_rules! impl_lex {
 }
 
 #[macro_export]
+macro_rules! define_parsablell {
+    () => {
+        pub trait ParsableLL: Sized {
+            fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, ()>;
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! define_yacc {
     () => {
         pub struct Yacc;
@@ -223,9 +278,30 @@ macro_rules! define_yacc {
 }
 
 #[macro_export]
+macro_rules! impl_parser_ll {
+    ( $i:ident ) => {
+        impl Yacc {
+            pub fn parse(v: &Vec<Token>) -> Result<$i, ()> {
+                let mut idx = 0;
+                let result = $i::parse_ll(&v, &mut idx)?;
+                if idx == v.len() {
+                    Ok(result)
+                } else {
+                    Err(())
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! impl_yacc {
-    () => {
+    ( $tt2:tt $tt3:tt { $i:ident } ) => {
+        impl_parsablell_for_terminal_symbol!($tt2);
+        impl_parsablell_for_nonterminal_symbol!($tt3);
+        define_parsablell!();
         define_yacc!();
+        impl_parser_ll!($i);
     };
 }
 
