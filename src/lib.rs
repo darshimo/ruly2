@@ -1,3 +1,4 @@
+pub use lr_parser::*;
 pub use once_cell::sync::Lazy;
 pub use regex::Regex;
 
@@ -7,7 +8,8 @@ macro_rules! syntax {
         WHITESPACE $tt1:tt
         TOKEN $tt2:tt
         RULE $tt3:tt
-        START $tt4:tt
+        START { $i1:tt }
+        ALGORITHM { $i2:ident }
     ) => {
         declare_whitespace_regex!($tt1);
         declare_token_extractors!($tt2);
@@ -15,7 +17,7 @@ macro_rules! syntax {
         impl_terminal_symbol!($tt2);
         impl_nonterminal_symbol!($tt3);
         impl_lex!();
-        impl_yacc!();
+        impl_yacc!($tt2, $tt3, $i1, $i2);
     };
 }
 
@@ -224,8 +226,9 @@ macro_rules! define_yacc {
 
 #[macro_export]
 macro_rules! impl_yacc {
-    () => {
+    ( { $( $i1:ident => $tt1:tt );*; } , { $( $i2:ident => $( $i3:ident ( $($tt2:tt),* ) )|+ );*; } , $i4:ident , $i5:ident ) => {
         define_yacc!();
+        impl_lr_parser!( $i5 $i4 { $( $i1 )* } { $( { $i2 $( { $i3 ( $( $tt2 )* ) } )* } )* } );
     };
 }
 
