@@ -18,12 +18,28 @@ impl Item {
         }
     }
 
+    pub fn get_rule_name(&self) -> &str {
+        &self.rule_id.1
+    }
+
+    pub fn get_lhs(&self) -> &str {
+        &self.lhs
+    }
+
+    pub fn get_rhs(&self) -> &Vec<String> {
+        &self.rhs
+    }
+
     pub fn get_symbol_under_pointer(&self) -> Option<String> {
         self.rhs.get(self.pointer).cloned()
     }
 
     pub fn inc_pointer(&mut self) {
         self.pointer += 1;
+    }
+
+    pub fn is_reducible(&self) -> bool {
+        self.pointer == self.rhs.len()
     }
 }
 
@@ -87,6 +103,10 @@ impl LR0Closure {
         }
 
         LR0Closure(item_set)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }
 

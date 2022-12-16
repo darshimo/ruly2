@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::item::{Item, LR0Closure};
 
-pub fn compute_table(
+pub fn compute_lr0_transition_map(
     start_symbol: &str,
     map_lhs2items: &HashMap<String, HashSet<Item>>, // lhs -> 左辺がlhsであり，かつポインタが左端にあるitemの集合
 ) -> (

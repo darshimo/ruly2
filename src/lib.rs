@@ -99,7 +99,7 @@ macro_rules! declare_token_extractors {
 #[macro_export]
 macro_rules! impl_token {
     ( { $( $i:ident => $tt:tt );*; } ) => {
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         pub enum Token {
             $(
                 $i($i),
@@ -122,7 +122,7 @@ macro_rules! impl_token {
 macro_rules! impl_terminal_symbol {
     ( { $( $i:ident => $tt:tt );*; } ) => {
         $(
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
             pub struct $i(String);
         )*
     };

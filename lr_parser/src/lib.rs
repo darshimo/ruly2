@@ -3,8 +3,9 @@ use proc_macro::*;
 mod common;
 mod item;
 mod rule;
-mod table;
 mod token;
+
+mod parser;
 
 #[proc_macro]
 pub fn impl_lr_parser(input: TokenStream) -> TokenStream {
@@ -18,8 +19,13 @@ pub fn impl_lr_parser(input: TokenStream) -> TokenStream {
 
     let (nonterminal_symbols, map_lhs2items) = rule::parse_rule(&start_symbol, iter.next());
 
-    let (parsing_table, closure_state_map, accept_state) =
-        table::compute_table(&start_symbol, &map_lhs2items);
-
-    "".to_string().parse().unwrap()
+    parser::create_parser(
+        &algorithm,
+        &start_symbol,
+        &terminal_symbols,
+        &nonterminal_symbols,
+        &map_lhs2items,
+    )
+    .parse()
+    .unwrap()
 }
