@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::item::Item;
 
 mod first_sets;
+mod follow_sets;
 mod lr0;
 
 #[derive(Debug)]
