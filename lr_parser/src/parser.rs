@@ -5,6 +5,7 @@ use crate::item::Item;
 mod first_sets;
 mod follow_sets;
 mod lr0;
+mod slr;
 
 #[derive(Debug)]
 pub enum Action {
@@ -24,6 +25,12 @@ pub fn create_parser(
         "LR0" => lr0::parsing_table::compute_lr0_parsing_table(
             start_symbol,
             terminal_symbols,
+            map_lhs2items,
+        ),
+
+        "SLR" => slr::parsing_table::compute_slr_parsing_table(
+            start_symbol,
+            nonterminal_symbols,
             map_lhs2items,
         ),
 
