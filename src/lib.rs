@@ -125,7 +125,7 @@ macro_rules! impl_token {
 macro_rules! impl_terminal_symbol {
     ( { $( $i:ident => $tt:tt );*; } ) => {
         $(
-            #[derive(Debug, Clone)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct $i(String);
             impl $i {
                 pub fn as_str<'a>(&'a self) -> &'a str {
@@ -158,7 +158,7 @@ macro_rules! impl_parsablell_for_terminal_symbol {
 macro_rules! impl_nonterminal_symbol {
     ( { $( $i1:ident => $( $i2:ident ( $($tt:tt),* ) )|+ );*; } ) => {
         $(
-            #[derive(Debug)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub enum $i1 {
                 $( $i2( $( Box<$tt> ),* ) ),*,
             }
@@ -338,5 +338,231 @@ mod tests {
     fn it_works() {
         let result = 2 + 2;
         assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn test_ll() {
+        use crate::*;
+
+        syntax!(
+            WHITESPACE {
+                r"[ \n\r\t]*"
+            }
+
+            TOKEN {
+                Cons => {r"::"};
+                Nil => {r"\[\]"};
+                Num => {r"[1-9][0-9]*"};
+                Op => {r"\*|\+"};
+            }
+
+            RULE {
+                List => List0(Term, Cons, List)
+                    | List1(Nil);
+
+                Term => Term0(Num, Op, Term)
+                    | Term1(Num);
+            }
+
+            START {
+                List
+            }
+
+            ALGORITHM {
+                LL
+            }
+        );
+
+        let s = "1+2::3*4::[]";
+        let result = Parser::parse(s);
+        let expected = List::List0(
+            Box::new(Term::Term0(
+                Box::new(Num(1.to_string())),
+                Box::new(Op("+".to_string())),
+                Box::new(Term::Term1(Box::new(Num(2.to_string())))),
+            )),
+            Box::new(Cons("::".to_string())),
+            Box::new(List::List0(
+                Box::new(Term::Term0(
+                    Box::new(Num(3.to_string())),
+                    Box::new(Op("*".to_string())),
+                    Box::new(Term::Term1(Box::new(Num(4.to_string())))),
+                )),
+                Box::new(Cons("::".to_string())),
+                Box::new(List::List1(Box::new(Nil("[]".to_string())))),
+            )),
+        );
+
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn test_lr0() {
+        use crate::*;
+
+        syntax!(
+            WHITESPACE {
+                r"[ \n\r\t]*"
+            }
+
+            TOKEN {
+                L => {r"<"};
+                R => {r">"};
+            }
+
+            RULE {
+                S => S0(A, A);
+
+                A => A0(L, A, R)
+                    | A1(L, R);
+            }
+
+            START {
+                S
+            }
+
+            ALGORITHM {
+                LR0
+            }
+        );
+
+        let s = "<<>><>";
+        let result = Parser::parse(s);
+
+        let a_lr = A::A1(Box::new(L("<".to_string())), Box::new(R(">".to_string())));
+        let a_llrr = A::A0(
+            Box::new(L("<".to_string())),
+            Box::new(a_lr.clone()),
+            Box::new(R(">".to_string())),
+        );
+        let expected = S::S0(Box::new(a_llrr), Box::new(a_lr));
+
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn test_slr() {
+        use crate::*;
+
+        syntax!(
+            WHITESPACE {
+                r"[ \n\r\t]*"
+            }
+
+            TOKEN {
+                P => {r"\+"};
+                M => {r"\*"};
+                N => {"[1-9][0-9]*"};
+            }
+
+            RULE {
+                E => E0(E, P, T)
+                    | E1(T);
+
+                T => T0(T, M, N)
+                    | T1(N);
+            }
+
+            START {
+                E
+            }
+
+            ALGORITHM {
+                SLR
+            }
+        );
+
+        let s = "1*2*3+4*5+6";
+        let result = Parser::parse(s);
+
+        let t_1m2 = T::T0(
+            Box::new(T::T1(Box::new(N(1.to_string())))),
+            Box::new(M("*".to_string())),
+            Box::new(N(2.to_string())),
+        );
+        let t_1m2m3 = T::T0(
+            Box::new(t_1m2),
+            Box::new(M("*".to_string())),
+            Box::new(N(3.to_string())),
+        );
+        let t_4m5 = T::T0(
+            Box::new(T::T1(Box::new(N(4.to_string())))),
+            Box::new(M("*".to_string())),
+            Box::new(N(5.to_string())),
+        );
+        let t_6 = T::T1(Box::new(N(6.to_string())));
+        let expected = E::E0(
+            Box::new(E::E0(
+                Box::new(E::E1(Box::new(t_1m2m3))),
+                Box::new(P("+".to_string())),
+                Box::new(t_4m5),
+            )),
+            Box::new(P("+".to_string())),
+            Box::new(t_6),
+        );
+
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn test_lr1() {
+        use crate::*;
+
+        syntax!(
+            WHITESPACE {
+                r"[ \n\r\t]*"
+            }
+
+            TOKEN {
+                Eq => {"="};
+                P => {r"\+"};
+                N => {"[1-9][0-9]*"};
+                Id => {"[a-z]+"};
+            }
+
+            RULE {
+                A => A0(E, Eq, E)
+                    | A1(Id);
+
+                E => E0(E, P, T)
+                    | E1(T);
+
+                T => T0(N)
+                    | T1(Id);
+            }
+
+            START {
+                A
+            }
+
+            ALGORITHM {
+                LR1
+            }
+        );
+
+        let s = "x+2+y=4+z";
+        let result = Parser::parse(s);
+        let e_xp2 = E::E0(
+            Box::new(E::E1(Box::new(T::T1(Box::new(Id("x".to_string())))))),
+            Box::new(P("+".to_string())),
+            Box::new(T::T0(Box::new(N(2.to_string())))),
+        );
+        let e_xp2py = E::E0(
+            Box::new(e_xp2),
+            Box::new(P("+".to_string())),
+            Box::new(T::T1(Box::new(Id("y".to_string())))),
+        );
+        let e_4pz = E::E0(
+            Box::new(E::E1(Box::new(T::T0(Box::new(N(4.to_string())))))),
+            Box::new(P("+".to_string())),
+            Box::new(T::T1(Box::new(Id("z".to_string())))),
+        );
+        let expected = A::A0(
+            Box::new(e_xp2py),
+            Box::new(Eq("=".to_string())),
+            Box::new(e_4pz),
+        );
+
+        assert_eq!(result, Ok(expected));
     }
 }
