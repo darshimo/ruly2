@@ -1,7 +1,13 @@
 [package]
 name = "ruly2"
 version = "0.1.0"
+authors = ["Takumi Shimoda <takumishimoda7623@gmail.com>"]
 edition = "2021"
+categories = ["parsing"]
+keywords = ["parsing", "cfg"]
+description = "parser generator from context free grammar"
+license = "MIT"
+repository = "https://github.com/darshimo/ruly2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,7 +1,11 @@
 [package]
 name = "lr_parser"
 version = "0.1.0"
+authors = ["Takumi Shimoda <takumishimoda7623@gmail.com>"]
 edition = "2021"
+keywords = ["proc_macro"]
+description = "macros for ruly2"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
