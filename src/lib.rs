@@ -1,3 +1,4 @@
+pub use lr_parser::*;
 pub use once_cell::sync::Lazy;
 pub use regex::Regex;
 
@@ -7,7 +8,8 @@ macro_rules! syntax {
         WHITESPACE $tt1:tt
         TOKEN $tt2:tt
         RULE $tt3:tt
-        START $tt4:tt
+        START { $i1:tt }
+        ALGORITHM { $i2:ident }
     ) => {
         declare_whitespace_regex!($tt1);
         declare_token_extractors!($tt2);
@@ -16,7 +18,7 @@ macro_rules! syntax {
         impl_nonterminal_symbol!($tt3);
 
         impl_lex!();
-        impl_yacc!($tt2 $tt3 $tt4);
+        impl_yacc!($tt2, $tt3, $i1, $i2);
     };
 }
 
@@ -98,7 +100,7 @@ macro_rules! declare_token_extractors {
 #[macro_export]
 macro_rules! impl_token {
     ( { $( $i:ident => $tt:tt );*; } ) => {
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         pub enum Token {
             $(
                 $i($i),
@@ -296,12 +298,17 @@ macro_rules! impl_parser_ll {
 
 #[macro_export]
 macro_rules! impl_yacc {
-    ( $tt2:tt $tt3:tt { $i:ident } ) => {
-        impl_parsablell_for_terminal_symbol!($tt2);
-        impl_parsablell_for_nonterminal_symbol!($tt3);
+    ( $tt1:tt , $tt2:tt , $i1:ident , LL ) => {
+        impl_parsablell_for_terminal_symbol!($tt1);
+        impl_parsablell_for_nonterminal_symbol!($tt2);
         define_parsablell!();
         define_yacc!();
-        impl_parser_ll!($i);
+        impl_parser_ll!($i1);
+    };
+
+    ( { $( $i1:ident => $tt1:tt );*; } , { $( $i2:ident => $( $i3:ident ( $($tt2:tt),* ) )|+ );*; } , $i4:ident , $i5:ident ) => {
+        define_yacc!();
+        impl_lr_parser!( $i5 $i4 { $( $i1 )* } { $( { $i2 $( { $i3 ( $( $tt2 )* ) } )* } )* } );
     };
 }
 
