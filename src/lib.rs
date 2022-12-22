@@ -19,6 +19,8 @@ macro_rules! syntax {
 
         impl_lex!();
         impl_yacc!($tt2, $tt3, $i1, $i2);
+
+        impl_parser!($i1);
     };
 }
 
@@ -101,7 +103,7 @@ macro_rules! declare_token_extractors {
 macro_rules! impl_token {
     ( { $( $i:ident => $tt:tt );*; } ) => {
         #[derive(Debug, Clone)]
-        pub enum Token {
+        enum Token {
             $(
                 $i($i),
             )*
@@ -125,6 +127,11 @@ macro_rules! impl_terminal_symbol {
         $(
             #[derive(Debug, Clone)]
             pub struct $i(String);
+            impl $i {
+                pub fn as_str<'a>(&'a self) -> &'a str {
+                    &self.0
+                }
+            }
         )*
     };
 }
@@ -134,12 +141,12 @@ macro_rules! impl_parsablell_for_terminal_symbol {
     ( { $( $i:ident => $tt:tt );*; } ) => {
         $(
             impl ParsableLL for $i {
-                fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, ()> {
+                fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, String> {
                     if let Some(Token::$i(x)) = v.get(*idx) {
                         *idx += 1;
                         return Ok(x.clone());
                     } else {
-                        Err(())
+                        Err("ParseError!".to_string())
                     }
                 }
             }
@@ -164,11 +171,11 @@ macro_rules! impl_parsablell_for_nonterminal_symbol {
     ( { $( $i1:ident => $( $i2:ident ( $($tt:tt),* ) )|+ );*; } ) => {
         $(
             impl ParsableLL for $i1 {
-                fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, ()> {
+                fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, String> {
                     let start_idx = *idx;
 
                     $(
-                        let mut c = || -> Result<Self, ()> {
+                        let mut c = || -> Result<Self, String> {
                             Ok($i1::$i2(
                                 $( Box::new($tt::parse_ll(v, idx)?) ),*,
                             ))
@@ -179,7 +186,7 @@ macro_rules! impl_parsablell_for_nonterminal_symbol {
                         *idx = start_idx;
                     )*
 
-                    Err(())
+                    Err("ParseError!".to_string())
                 }
             }
         )*
@@ -189,10 +196,10 @@ macro_rules! impl_parsablell_for_nonterminal_symbol {
 #[macro_export]
 macro_rules! impl_lex {
     () => {
-        pub struct Lex;
+        struct Lex;
 
         impl Lex {
-            pub fn tokenize(s: &str) -> Result<Vec<Token>, String> {
+            fn tokenize(s: &str) -> Result<Vec<Token>, String> {
                 let mut ret = vec![];
 
                 let mut current_pos = 0;
@@ -266,8 +273,8 @@ macro_rules! impl_lex {
 #[macro_export]
 macro_rules! define_parsablell {
     () => {
-        pub trait ParsableLL: Sized {
-            fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, ()>;
+        trait ParsableLL: Sized {
+            fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, String>;
         }
     };
 }
@@ -275,7 +282,7 @@ macro_rules! define_parsablell {
 #[macro_export]
 macro_rules! define_yacc {
     () => {
-        pub struct Yacc;
+        struct Yacc;
     };
 }
 
@@ -283,13 +290,13 @@ macro_rules! define_yacc {
 macro_rules! impl_parser_ll {
     ( $i:ident ) => {
         impl Yacc {
-            pub fn parse(v: &Vec<Token>) -> Result<$i, ()> {
+            fn parse(v: &Vec<Token>) -> Result<$i, String> {
                 let mut idx = 0;
                 let result = $i::parse_ll(&v, &mut idx)?;
                 if idx == v.len() {
                     Ok(result)
                 } else {
-                    Err(())
+                    Err("ParseError!".to_string())
                 }
             }
         }
@@ -309,6 +316,19 @@ macro_rules! impl_yacc {
     ( { $( $i1:ident => $tt1:tt );*; } , { $( $i2:ident => $( $i3:ident ( $($tt2:tt),* ) )|+ );*; } , $i4:ident , $i5:ident ) => {
         define_yacc!();
         impl_lr_parser!( $i5 $i4 { $( $i1 )* } { $( { $i2 $( { $i3 ( $( $tt2 )* ) } )* } )* } );
+    };
+}
+
+#[macro_export]
+macro_rules! impl_parser {
+    ( $i:ident ) => {
+        pub struct Parser;
+        impl Parser {
+            pub fn parse(s: &str) -> Result<$i, String> {
+                let v = Lex::tokenize(s)?;
+                Yacc::parse(&v)
+            }
+        }
     };
 }
 

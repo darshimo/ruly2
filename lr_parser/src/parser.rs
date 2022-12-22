@@ -58,15 +58,15 @@ pub fn create_parser(
             ret
         }
 
-        Err(_) => {
+        Err(error_message) => {
             format!(
                 "
 impl Yacc {{
-    pub fn parse(v: &Vec<Token>) -> Result<{}, ()> {{
-        Err(())
+    pub fn parse(v: &Vec<Token>) -> Result<{}, String> {{
+        Err({})
     }}
 }}",
-                start_symbol
+                start_symbol, error_message
             )
         }
     }
@@ -138,7 +138,7 @@ fn shift(from: usize, x: &str, to: usize) -> String {
             (Some({}), Some(Tree::{}(_))) => {{
                 self.state_stack.push({});
                 self.symbol_stack.push(self.input.pop_front().unwrap());
-                return Status::Running;
+                return Ok(Status::Running);
             }}",
         from, x, to
     )
@@ -167,7 +167,7 @@ fn reduce(from: usize, x: &str, item: &Item) -> String {
                 if let ({}) = ({}) {{
                     if let ({}) = ({}) {{
                         self.input.push_front(Tree::{}({}::{}({})));
-                        return Status::Running;
+                        return Ok(Status::Running);
                     }}
                 }}
             }}",
@@ -190,7 +190,7 @@ fn accept(from: usize, start_symbol: &str) -> String {
             (Some({}), None) => {{
                 if let Some(Tree::F_(_)) = self.symbol_stack.pop() {{
                     if let Some(Tree::{}(x)) = self.symbol_stack.pop() {{
-                        return Status::Finished(x);
+                        return Ok(Status::Finished(x));
                     }}
                 }}
             }}",
@@ -206,7 +206,7 @@ fn fn_step(
 
     ret.push_str(
         "
-    fn step(&mut self) -> Status {
+    fn step(&mut self) -> Result<Status, String> {
         match (self.state_stack.last(), self.input.front()) {",
     );
 
@@ -229,7 +229,7 @@ fn fn_step(
             _ => {}
         }
 
-        panic!()
+        Err(\"ParseError!\".to_string())
     }",
     );
 
@@ -239,9 +239,9 @@ fn fn_step(
 fn fn_run(start_symbol: &str) -> String {
     format!(
         "
-    fn run(&mut self) -> Result<{}, ()> {{
+    fn run(&mut self) -> Result<{}, String> {{
         loop {{
-            if let Status::Finished(t) = self.step() {{
+            if let Status::Finished(t) = self.step()? {{
                 return Ok(t);
             }}
         }}
@@ -254,7 +254,7 @@ fn impl_yacc(start_symbol: &str) -> String {
     format!(
         "
 impl Yacc {{
-    pub fn parse(v: &Vec<Token>) -> Result<{}, ()> {{
+    pub fn parse(v: &Vec<Token>) -> Result<{}, String> {{
         let v: Vec<_> = v.iter().map(|x| Tree::from(x)).collect();
         let mut automaton = Automaton::new(v);
 
