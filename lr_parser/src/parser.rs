@@ -5,6 +5,7 @@ use crate::item::Item;
 mod first_sets;
 mod follow_sets;
 mod lr0;
+mod lr1;
 mod slr;
 
 #[derive(Debug)]
@@ -29,6 +30,12 @@ pub fn create_parser(
         ),
 
         "SLR" => slr::parsing_table::compute_slr_parsing_table(
+            start_symbol,
+            nonterminal_symbols,
+            map_lhs2items,
+        ),
+
+        "LR1" => lr1::parsing_table::compute_lr1_parsing_table(
             start_symbol,
             nonterminal_symbols,
             map_lhs2items,
