@@ -177,7 +177,7 @@ macro_rules! impl_parsablell_for_nonterminal_symbol {
                     $(
                         let mut c = || -> Result<Self, String> {
                             Ok($i1::$i2(
-                                $( Box::new($tt::parse_ll(v, idx)?) ),*,
+                                $( Box::new($tt::parse_ll(v, idx)?) ),*
                             ))
                         };
                         if let Ok(x) = c() {
