@@ -416,7 +416,7 @@ mod tests {
         );
 
         let s = "1+2::3*4::[]";
-        let result = Parser::parse(s);
+        let result = Parser::parse(s).unwrap();
         let expected = List::List0(
             Box::new(Term::Term0(
                 Box::new(Num(1.to_string())),
@@ -435,7 +435,8 @@ mod tests {
             )),
         );
 
-        assert_eq!(result, Ok(expected));
+        assert_eq!(result, expected);
+        assert_eq!(format!("{}", result), "1 + 2 :: 3 * 4 :: []".to_string());
     }
 
     #[test]
@@ -469,7 +470,7 @@ mod tests {
         );
 
         let s = "<<>><>";
-        let result = Parser::parse(s);
+        let result = Parser::parse(s).unwrap();
 
         let a_lr = A::A1(Box::new(L("<".to_string())), Box::new(R(">".to_string())));
         let a_llrr = A::A0(
@@ -479,7 +480,8 @@ mod tests {
         );
         let expected = S::S0(Box::new(a_llrr), Box::new(a_lr));
 
-        assert_eq!(result, Ok(expected));
+        assert_eq!(result, expected);
+        assert_eq!(format!("{}", result), "< < > > < >".to_string());
     }
 
     #[test]
@@ -515,7 +517,7 @@ mod tests {
         );
 
         let s = "1*2*3+4*5+6";
-        let result = Parser::parse(s);
+        let result = Parser::parse(s).unwrap();
 
         let t_1m2 = T::T0(
             Box::new(T::T1(Box::new(N(1.to_string())))),
@@ -543,7 +545,8 @@ mod tests {
             Box::new(t_6),
         );
 
-        assert_eq!(result, Ok(expected));
+        assert_eq!(result, expected);
+        assert_eq!(format!("{}", result), "1 * 2 * 3 + 4 * 5 + 6".to_string());
     }
 
     #[test]
@@ -583,7 +586,7 @@ mod tests {
         );
 
         let s = "x+2+y=4+z";
-        let result = Parser::parse(s);
+        let result = Parser::parse(s).unwrap();
         let e_xp2 = E::E0(
             Box::new(E::E1(Box::new(T::T1(Box::new(Id("x".to_string())))))),
             Box::new(P("+".to_string())),
@@ -605,6 +608,7 @@ mod tests {
             Box::new(e_4pz),
         );
 
-        assert_eq!(result, Ok(expected));
+        assert_eq!(result, expected);
+        assert_eq!(format!("{}", result), "x + 2 + y = 4 + z".to_string());
     }
 }
