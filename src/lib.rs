@@ -1,5 +1,6 @@
 pub use lr_parser::*;
 pub use once_cell::sync::Lazy;
+pub use paste;
 pub use regex::Regex;
 
 #[macro_export]
@@ -135,6 +136,12 @@ macro_rules! impl_terminal_symbol {
                 pub fn new(s: &str) -> Self {
                     Self(s.to_string())
                 }
+
+            }
+            impl std::fmt::Display for $i {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}", self.as_str())
+                }
             }
         )*
     };
@@ -159,12 +166,43 @@ macro_rules! impl_parsablell_for_terminal_symbol {
 }
 
 #[macro_export]
+macro_rules! helper1 {
+    ( $i1:ident $( $i2:ident )* | $( { $( $i:ident )* } )* | $a:ident $b:ident $self:ident $f:ident ) => {
+        helper1!( $($i2)* | { $i1 $($i2)* } $( { $( $i )* } )* | $a $b $self $f )
+    };
+    ( $i1:ident | $( { $( $i:ident )* } )* | $a:ident $b:ident $self:ident $f:ident ) => {
+        helper1!( | { $i1 $($i2)* } $( { $( $i )* } )* | $a $b $self $f )
+    };
+    ( | $( { $( $i:ident )* } )* | $a:ident $b:ident $self:ident $f:ident ) => {
+        if let $a::$b( $( paste::item!{ [<t_ $($i)* >] } ),* ) = $self {
+            return write!($f, helper2!( $( { $($i)* } )* | ), $( paste::item!{ [<t_ $($i)* >] } ),*  );
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! helper2 {
+    ( { $($i1:ident)* } $( { $($i2:ident)* } )* | $($tt3:tt)*) => {
+        helper2!( $( { $($i2)* } )* | {} $($tt3)* )
+    };
+    ( | $($tt3:tt)* ) => {
+        stringify!($($tt3)*)
+    }
+}
+
+#[macro_export]
 macro_rules! impl_nonterminal_symbol {
-    ( { $( $i1:ident => $( $i2:ident ( $($tt:tt),* ) )|+ );*; } ) => {
+    ( { $( $i1:ident => $( $i2:ident ( $($i3:ident),* ) )|+ );*; } ) => {
         $(
             #[derive(Debug, Clone, PartialEq, Eq)]
             pub enum $i1 {
-                $( $i2( $( Box<$tt> ),* ) ),*,
+                $( $i2( $( Box<$i3> ),* ) ),*,
+            }
+            impl std::fmt::Display for $i1 {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    $( helper1!( $( $i3 )* | | $i1 $i2 self f); )*
+                    Err(std::fmt::Error)
+                }
             }
         )*
     };
