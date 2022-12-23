@@ -131,6 +131,10 @@ macro_rules! impl_terminal_symbol {
                 pub fn as_str<'a>(&'a self) -> &'a str {
                     &self.0
                 }
+
+                pub fn new(s: &str) -> Self {
+                    Self(s.to_string())
+                }
             }
         )*
     };
