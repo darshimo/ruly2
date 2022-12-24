@@ -63,7 +63,7 @@ pub fn create_parser(
                 "
 impl Yacc {{
     pub fn parse(v: &Vec<Token>) -> Result<{}, String> {{
-        Err({})
+        Err(\"{}\".to_string())
     }}
 }}",
                 start_symbol, error_message
