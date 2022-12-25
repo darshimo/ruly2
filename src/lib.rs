@@ -72,7 +72,7 @@ macro_rules! push_closure {
 
 #[macro_export]
 macro_rules! declare_token_extractors {
-    ( { $( $i:ident => $tt:tt );*; } ) => {
+    ( { $( $i:ident => $tt:tt )* } ) => {
 
         struct Closures {
             reserved: Vec<Box<dyn Fn(usize, &str) -> Option<Token> + Send + Sync>>,
@@ -102,7 +102,7 @@ macro_rules! declare_token_extractors {
 
 #[macro_export]
 macro_rules! impl_token {
-    ( { $( $i:ident => $tt:tt );*; } ) => {
+    ( { $( $i:ident => $tt:tt )* } ) => {
         #[derive(Debug, Clone)]
         enum Token {
             $(
@@ -124,7 +124,7 @@ macro_rules! impl_token {
 
 #[macro_export]
 macro_rules! impl_terminal_symbol {
-    ( { $( $i:ident => $tt:tt );*; } ) => {
+    ( { $( $i:ident => $tt:tt )* } ) => {
         $(
             #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct $i(String);
@@ -149,7 +149,7 @@ macro_rules! impl_terminal_symbol {
 
 #[macro_export]
 macro_rules! impl_parsablell_for_terminal_symbol {
-    ( { $( $i:ident => $tt:tt );*; } ) => {
+    ( { $( $i:ident => $tt:tt )* } ) => {
         $(
             impl ParsableLL for $i {
                 fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, String> {
@@ -192,7 +192,7 @@ macro_rules! helper2 {
 
 #[macro_export]
 macro_rules! impl_nonterminal_symbol {
-    ( { $( $i1:ident => $( $i2:ident ( $($i3:ident),* ) )|+ );*; } ) => {
+    ( { $( $i1:ident => $( | $i2:ident ( $($i3:ident),* ) )+ )* } ) => {
         $(
             #[derive(Debug, Clone, PartialEq, Eq)]
             pub enum $i1 {
@@ -210,7 +210,7 @@ macro_rules! impl_nonterminal_symbol {
 
 #[macro_export]
 macro_rules! impl_parsablell_for_nonterminal_symbol {
-    ( { $( $i1:ident => $( $i2:ident ( $($tt:tt),* ) )|+ );*; } ) => {
+    ( { $( $i1:ident => $( | $i2:ident ( $($tt:tt),* ) )+ )* } ) => {
         $(
             impl ParsableLL for $i1 {
                 fn parse_ll(v: &Vec<Token>, idx: &mut usize) -> Result<Self, String> {
@@ -355,7 +355,7 @@ macro_rules! impl_yacc {
         impl_parser_ll!($i1);
     };
 
-    ( { $( $i1:ident => $tt1:tt );*; } , { $( $i2:ident => $( $i3:ident ( $($tt2:tt),* ) )|+ );*; } , $i4:ident , $i5:ident ) => {
+    ( { $( $i1:ident => $tt1:tt )* } , { $( $i2:ident => $( | $i3:ident ( $($tt2:tt),* ) )+ )* } , $i4:ident , $i5:ident ) => {
         define_yacc!();
         impl_lr_parser!( $i5 $i4 { $( $i1 )* } { $( { $i2 $( { $i3 ( $( $tt2 )* ) } )* } )* } );
     };
@@ -392,18 +392,20 @@ mod tests {
             }
 
             TOKEN {
-                Cons => {r"::"};
-                Nil => {r"\[\]"};
-                Num => {r"[1-9][0-9]*"};
-                Op => {r"\*|\+"};
+                Cons => {r"::"}
+                Nil => {r"\[\]"}
+                Num => {r"[1-9][0-9]*"}
+                Op => {r"\*|\+"}
             }
 
             RULE {
-                List => List0(Term, Cons, List)
-                    | List1(Nil);
+                List =>
+                    | List0(Term, Cons, List)
+                    | List1(Nil)
 
-                Term => Term0(Num, Op, Term)
-                    | Term1(Num);
+                Term =>
+                    | Term0(Num, Op, Term)
+                    | Term1(Num)
             }
 
             START {
@@ -449,15 +451,17 @@ mod tests {
             }
 
             TOKEN {
-                L => {r"<"};
-                R => {r">"};
+                L => {r"<"}
+                R => {r">"}
             }
 
             RULE {
-                S => S0(A, A);
+                S =>
+                    | S0(A, A)
 
-                A => A0(L, A, R)
-                    | A1(L, R);
+                A =>
+                    | A0(L, A, R)
+                    | A1(L, R)
             }
 
             START {
@@ -494,17 +498,19 @@ mod tests {
             }
 
             TOKEN {
-                P => {r"\+"};
-                M => {r"\*"};
-                N => {"[1-9][0-9]*"};
+                P => {r"\+"}
+                M => {r"\*"}
+                N => {"[1-9][0-9]*"}
             }
 
             RULE {
-                E => E0(E, P, T)
-                    | E1(T);
+                E =>
+                    | E0(E, P, T)
+                    | E1(T)
 
-                T => T0(T, M, N)
-                    | T1(N);
+                T =>
+                    | T0(T, M, N)
+                    | T1(N)
             }
 
             START {
@@ -559,21 +565,24 @@ mod tests {
             }
 
             TOKEN {
-                Eq => {"="};
-                P => {r"\+"};
-                N => {"[1-9][0-9]*"};
-                Id => {"[a-z]+"};
+                Eq => {"="}
+                P => {r"\+"}
+                N => {"[1-9][0-9]*"}
+                Id => {"[a-z]+"}
             }
 
             RULE {
-                A => A0(E, Eq, E)
-                    | A1(Id);
+                A =>
+                    | A0(E, Eq, E)
+                    | A1(Id)
 
-                E => E0(E, P, T)
-                    | E1(T);
+                E =>
+                    | E0(E, P, T)
+                    | E1(T)
 
-                T => T0(N)
-                    | T1(Id);
+                T =>
+                    | T0(N)
+                    | T1(Id)
             }
 
             START {
