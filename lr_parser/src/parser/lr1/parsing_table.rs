@@ -112,7 +112,7 @@ fn rec(
             .unwrap()
             .insert(Some(c), Action::Shift(next_closure_num))
         {
-            return Err("shift/reduce conflict!".to_string());
+            // return Err("shift/reduce conflict!".to_string());
         }
     }
 
