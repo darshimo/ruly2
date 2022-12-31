@@ -1,6 +1,6 @@
 [package]
 name = "lr_parser"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Takumi Shimoda <takumishimoda7623@gmail.com>"]
 edition = "2021"
 keywords = ["proc_macro"]
