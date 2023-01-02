@@ -274,13 +274,27 @@ macro_rules! impl_lex {
                     } else {
                         Some(token)
                     }
+                } else if let Some(token_reserved) = Self::find_reserved(s, current_pos) {
+                    let word = token_reserved.get_str();
+                    *current_pos += word.len();
+                    Some(token_reserved)
                 } else {
                     None
                 }
             }
 
-            fn find_not_reserved(s: &str, current_pos: &mut usize) -> Option<Token> {
+            fn find_not_reserved(s: &str, current_pos: &usize) -> Option<Token> {
                 for closure in TOKEN_EXTRACTORS.not_reserved.iter() {
+                    if let Some(token) = closure(*current_pos, s) {
+                        return Some(token);
+                    }
+                }
+
+                None
+            }
+
+            fn find_reserved(s: &str, current_pos: &usize) -> Option<Token> {
+                for closure in TOKEN_EXTRACTORS.reserved.iter() {
                     if let Some(token) = closure(*current_pos, s) {
                         return Some(token);
                     }
