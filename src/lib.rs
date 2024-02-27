@@ -435,19 +435,19 @@ mod tests {
         let result = Parser::parse(s).unwrap();
         let expected = List::List0(
             Box::new(Term::Term0(
-                Box::new(Num(1.to_string())),
-                Box::new(Op("+".to_string())),
-                Box::new(Term::Term1(Box::new(Num(2.to_string())))),
+                Box::new(Num::new("1")),
+                Box::new(Op::new("+")),
+                Box::new(Term::Term1(Box::new(Num::new("2")))),
             )),
-            Box::new(Cons("::".to_string())),
+            Box::new(Cons::new("::")),
             Box::new(List::List0(
                 Box::new(Term::Term0(
-                    Box::new(Num(3.to_string())),
-                    Box::new(Op("*".to_string())),
-                    Box::new(Term::Term1(Box::new(Num(4.to_string())))),
+                    Box::new(Num::new("3")),
+                    Box::new(Op::new("*")),
+                    Box::new(Term::Term1(Box::new(Num::new("4")))),
                 )),
-                Box::new(Cons("::".to_string())),
-                Box::new(List::List1(Box::new(Nil("[]".to_string())))),
+                Box::new(Cons::new("::")),
+                Box::new(List::List1(Box::new(Nil::new("[]")))),
             )),
         );
 
@@ -490,11 +490,11 @@ mod tests {
         let s = "<<>><>";
         let result = Parser::parse(s).unwrap();
 
-        let a_lr = A::A1(Box::new(L("<".to_string())), Box::new(R(">".to_string())));
+        let a_lr = A::A1(Box::new(L::new("<")), Box::new(R::new(">")));
         let a_llrr = A::A0(
-            Box::new(L("<".to_string())),
+            Box::new(L::new("<")),
             Box::new(a_lr.clone()),
-            Box::new(R(">".to_string())),
+            Box::new(R::new(">")),
         );
         let expected = S::S0(Box::new(a_llrr), Box::new(a_lr));
 
@@ -540,28 +540,28 @@ mod tests {
         let result = Parser::parse(s).unwrap();
 
         let t_1m2 = T::T0(
-            Box::new(T::T1(Box::new(N(1.to_string())))),
-            Box::new(M("*".to_string())),
-            Box::new(N(2.to_string())),
+            Box::new(T::T1(Box::new(N::new("1")))),
+            Box::new(M::new("*")),
+            Box::new(N::new("2")),
         );
         let t_1m2m3 = T::T0(
             Box::new(t_1m2),
-            Box::new(M("*".to_string())),
-            Box::new(N(3.to_string())),
+            Box::new(M::new("*")),
+            Box::new(N::new("3")),
         );
         let t_4m5 = T::T0(
-            Box::new(T::T1(Box::new(N(4.to_string())))),
-            Box::new(M("*".to_string())),
-            Box::new(N(5.to_string())),
+            Box::new(T::T1(Box::new(N::new("4")))),
+            Box::new(M::new("*")),
+            Box::new(N::new("5")),
         );
-        let t_6 = T::T1(Box::new(N(6.to_string())));
+        let t_6 = T::T1(Box::new(N::new("6")));
         let expected = E::E0(
             Box::new(E::E0(
                 Box::new(E::E1(Box::new(t_1m2m3))),
-                Box::new(P("+".to_string())),
+                Box::new(P::new("+")),
                 Box::new(t_4m5),
             )),
-            Box::new(P("+".to_string())),
+            Box::new(P::new("+")),
             Box::new(t_6),
         );
 
@@ -611,25 +611,21 @@ mod tests {
         let s = "x+2+y=4+z";
         let result = Parser::parse(s).unwrap();
         let e_xp2 = E::E0(
-            Box::new(E::E1(Box::new(T::T1(Box::new(Id("x".to_string())))))),
-            Box::new(P("+".to_string())),
-            Box::new(T::T0(Box::new(N(2.to_string())))),
+            Box::new(E::E1(Box::new(T::T1(Box::new(Id::new("x")))))),
+            Box::new(P::new("+")),
+            Box::new(T::T0(Box::new(N::new("2")))),
         );
         let e_xp2py = E::E0(
             Box::new(e_xp2),
-            Box::new(P("+".to_string())),
-            Box::new(T::T1(Box::new(Id("y".to_string())))),
+            Box::new(P::new("+")),
+            Box::new(T::T1(Box::new(Id::new("y")))),
         );
         let e_4pz = E::E0(
-            Box::new(E::E1(Box::new(T::T0(Box::new(N(4.to_string())))))),
-            Box::new(P("+".to_string())),
-            Box::new(T::T1(Box::new(Id("z".to_string())))),
+            Box::new(E::E1(Box::new(T::T0(Box::new(N::new("4")))))),
+            Box::new(P::new("+")),
+            Box::new(T::T1(Box::new(Id::new("z")))),
         );
-        let expected = A::A0(
-            Box::new(e_xp2py),
-            Box::new(Eq("=".to_string())),
-            Box::new(e_4pz),
-        );
+        let expected = A::A0(Box::new(e_xp2py), Box::new(Eq::new("=")), Box::new(e_4pz));
 
         assert_eq!(result, expected);
         assert_eq!(format!("{}", result), "x + 2 + y = 4 + z".to_string());
