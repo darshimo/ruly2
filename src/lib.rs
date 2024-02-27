@@ -129,18 +129,13 @@ macro_rules! impl_terminal_symbol {
             #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct $i(String);
             impl $i {
-                pub fn as_str<'a>(&'a self) -> &'a str {
-                    &self.0
-                }
-
                 pub fn new(s: &str) -> Self {
                     Self(s.to_string())
                 }
-
             }
             impl std::fmt::Display for $i {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    write!(f, "{}", self.as_str())
+                    write!(f, "{}", self.0)
                 }
             }
         )*
